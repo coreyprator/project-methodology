@@ -214,14 +214,36 @@ Each entry includes:
 
 ---
 
+## 2024-12 Lessons (v3.6)
+
+### LL-013: VS Code AI Delegated Automation to Project Lead
+
+| Field | Value |
+|-------|-------|
+| Date | 2024-12-28 |
+| Project | HarmonyLab |
+| Issue | VS Code AI told Project Lead to manually create secrets and run gcloud commands instead of automating |
+| Root Cause | Responsibility matrix listed tasks but didn't emphasize automation over instruction |
+| Fix Applied | Added "Responsibility Matrix Clarification" section; created cloud migration script template |
+| Template Section | Phase 1: Responsibility Matrix, Appendix C: Cloud Migration Script |
+
+**Impact**: Project Lead had to repeatedly redirect VS Code AI to automate tasks. Slowed migration by 2+ hours.
+
+**Key Learning**: 
+- VS Code AI must execute, not instruct
+- Provide executable script templates, not command lists
+- The only manual step is Passkey authentication (Phase 0.1)
+
+---
+
 ## Summary Statistics
 
 | Metric | Value |
 |--------|-------|
-| Total Lessons | 12 |
-| Template Sections Updated | 8 |
-| New Sections Added | 4 |
-| Projects Contributing | ArtForge (primary), HarmonyLab (planning) |
+| Total Lessons | 13 |
+| Template Sections Updated | 9 |
+| New Sections Added | 5 |
+| Projects Contributing | ArtForge (primary), HarmonyLab (migration) |
 
 ## How to Add New Lessons
 

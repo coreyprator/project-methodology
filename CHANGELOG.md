@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [3.6.0] - 2024-12-28
+
+### Added
+- **Passkey Authentication Script** (Phase 0.1): Explicit success/failure indicators for each authentication step
+- **Responsibility Matrix Clarification** (Phase 1): Emphasizes VS Code AI must execute, not instruct
+- **Cloud Migration Script Template** (Appendix C): Executable PowerShell script for automating cloud migration
+- **LL-013**: Documents delegation anti-pattern from HarmonyLab migration
+
+### Changed
+- **Authentication Flow**: Now includes "AFTER THIS POINT" marker clarifying VS Code AI runs all subsequent gcloud commands
+- **Responsibility Matrix**: Added comparison table showing wrong vs. correct VS Code AI behavior
+
+### Fixed
+- Ambiguity about who runs gcloud commands after authentication
+- VS Code AI interpreting responsibility matrix as "instruct user" rather than "execute directly"
+
+---
+
 ## [3.5.0] - 2024-12-27
 
 ### Added

@@ -1,4 +1,4 @@
-# Project Kickoff Template v3.5
+# Project Kickoff Template v3.6
 
 ## Document Variables
 
@@ -23,17 +23,40 @@ Replace these placeholders throughout this document:
 ### 0.1 Authentication Flow (MUST follow this order)
 
 ```powershell
-# Step 1: Browser authentication with Passkey (NO password prompt)
+# ============================================
+# PASSKEY AUTHENTICATION SEQUENCE
+# Project Lead runs this ONCE at session start
+# ============================================
+
+# Step 1: Browser authentication (opens browser, use Passkey)
 gcloud auth login
+# ✓ SUCCESS: Browser shows "You are now authenticated"
+# ✗ FAILURE: Password prompt in terminal = wrong flow
 
-# Step 2: Application default credentials
+# Step 2: Application default credentials (opens browser again)
 gcloud auth application-default login
+# ✓ SUCCESS: "Credentials saved to file"
 
-# Step 3: Set project (should NOT prompt for password if Step 1 done)
+# Step 3: Set project (should NOT prompt for anything)
 gcloud config set project {{GCP_PROJECT_ID}}
+# ✓ SUCCESS: "Updated property [core/project]"
+# ✗ FAILURE: Password prompt = Step 1 failed, restart
 
 # Step 4: Set quota project
 gcloud auth application-default set-quota-project {{GCP_PROJECT_ID}}
+# ✓ SUCCESS: "Credentials saved to file"
+
+# Step 5: VERIFY before proceeding
+gcloud config get-value project
+# Must output: {{GCP_PROJECT_ID}}
+
+gcloud auth list
+# Must show your account with asterisk (ACTIVE)
+
+# ============================================
+# AFTER THIS POINT: VS Code AI runs all gcloud commands
+# Project Lead does NOT run gcloud commands manually
+# ============================================
 ```
 
 > ⚠️ **CRITICAL**: If you see a password prompt at Step 3, STOP. Run `gcloud auth login` again. The Passkey flow should complete in browser without password entry.
@@ -105,6 +128,24 @@ gcloud run services describe {{PROJECT_SLUG}} --region=us-central1 --format="val
 | Debug deployment issues | | | ✅ |
 | Implement tests (pytest) | | | ✅ |
 | Build frontend | | | ✅ |
+
+### Responsibility Matrix Clarification
+
+**VS Code AI Automation Principle**: When a task is assigned to VS Code AI (✅ in the VS Code AI column), the AI must:
+
+1. **Execute commands directly** — Do not tell Project Lead to run gcloud commands
+2. **Create automation scripts** — Wrap multi-step processes in .ps1 scripts
+3. **Verify before reporting success** — Check command exit codes and state
+4. **Handle errors** — If a command fails, debug and retry before escalating
+
+**The ONLY exception**: If `gcloud config get-value project` returns wrong project, VS Code AI instructs Project Lead to run the Passkey authentication sequence (Phase 0.1).
+
+| ❌ Wrong Behavior | ✅ Correct Behavior |
+|-------------------|---------------------|
+| "Please run: `gcloud secrets create...`" | Run the command directly in terminal |
+| "Paste this value into Secret Manager" | `echo -n "value" \| gcloud secrets create...` |
+| "Help debug deployment errors" | Own debugging: check logs, fix issues, retry |
+| "You need to set up WIF" | Run WIF setup commands, report completion |
 
 ---
 
@@ -419,6 +460,123 @@ git push -u origin main
 
 ---
 
-**Template Version**: 3.5  
+## Appendix C: Cloud Migration Script Template
+
+Use this script template for migrating localhost projects to cloud-first deployment. VS Code AI should customize and execute this script directly.
+
+```powershell
+# {{PROJECT_SLUG}}-Cloud-Migration.ps1
+# VS Code AI: Run this script to complete cloud migration
+# Per project-methodology v3.6
+
+param(
+    [string]$ProjectId = "{{GCP_PROJECT_ID}}",
+    [string]$ProjectSlug = "{{PROJECT_SLUG}}",
+    [string]$Region = "us-central1",
+    [string]$SqlInstanceIp = "{{SQL_INSTANCE_IP}}",
+    [string]$DatabaseName = "{{DATABASE_NAME}}",
+    [string]$DatabaseUser = "{{PROJECT_SLUG}}_user",
+    [string]$DatabasePassword = "{{SECURE_PASSWORD}}"
+)
+
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "  $ProjectSlug Cloud Migration Script" -ForegroundColor Cyan
+Write-Host "========================================" -ForegroundColor Cyan
+
+# ========================================
+# Step 1: Verify Authentication
+# ========================================
+Write-Host "`nStep 1: Verifying GCP authentication..." -ForegroundColor Yellow
+
+$currentProject = gcloud config get-value project 2>$null
+if ($currentProject -ne $ProjectId) {
+    Write-Host "  ✗ Wrong project: $currentProject" -ForegroundColor Red
+    Write-Host "  Project Lead must run Passkey authentication sequence first." -ForegroundColor Red
+    Write-Host "  See: PROJECT_KICKOFF_TEMPLATE.md Phase 0.1" -ForegroundColor Gray
+    exit 1
+}
+Write-Host "  ✓ Authenticated to project: $currentProject" -ForegroundColor Green
+
+# ========================================
+# Step 2: Create/Update Secrets
+# ========================================
+Write-Host "`nStep 2: Configuring Secret Manager..." -ForegroundColor Yellow
+
+$secrets = @{
+    "$ProjectSlug-db-server" = $SqlInstanceIp
+    "$ProjectSlug-db-name" = $DatabaseName
+    "$ProjectSlug-db-user" = $DatabaseUser
+    "$ProjectSlug-db-password" = $DatabasePassword
+}
+
+foreach ($secretName in $secrets.Keys) {
+    $secretValue = $secrets[$secretName]
+    $exists = gcloud secrets describe $secretName --project=$ProjectId 2>$null
+    
+    if ($exists) {
+        Write-Host "  Updating secret '$secretName'..." -ForegroundColor Cyan
+        $secretValue | gcloud secrets versions add $secretName --data-file=- --project=$ProjectId 2>$null
+    } else {
+        Write-Host "  Creating secret '$secretName'..." -ForegroundColor Cyan
+        $secretValue | gcloud secrets create $secretName --data-file=- --project=$ProjectId 2>$null
+    }
+    
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "    ✓ $secretName" -ForegroundColor Green
+    } else {
+        Write-Host "    ✗ Failed: $secretName" -ForegroundColor Red
+    }
+}
+
+# ========================================
+# Step 3: Grant IAM Access
+# ========================================
+Write-Host "`nStep 3: Granting IAM access..." -ForegroundColor Yellow
+
+$PROJECT_NUMBER = (gcloud projects describe $ProjectId --format="value(projectNumber)")
+$SA = "$PROJECT_NUMBER-compute@developer.gserviceaccount.com"
+
+foreach ($secretName in $secrets.Keys) {
+    gcloud secrets add-iam-policy-binding $secretName `
+        --member="serviceAccount:$SA" `
+        --role="roles/secretmanager.secretAccessor" `
+        --project=$ProjectId 2>$null | Out-Null
+    Write-Host "  ✓ IAM binding: $secretName" -ForegroundColor Green
+}
+
+# ========================================
+# Step 4: Verify Infrastructure Files
+# ========================================
+Write-Host "`nStep 4: Checking infrastructure files..." -ForegroundColor Yellow
+
+$requiredFiles = @(
+    @{ Path = "Dockerfile"; Description = "Container definition" },
+    @{ Path = ".github/workflows/deploy.yml"; Description = "CI/CD pipeline" },
+    @{ Path = "requirements.txt"; Description = "Python dependencies" }
+)
+
+foreach ($file in $requiredFiles) {
+    if (Test-Path $file.Path) {
+        Write-Host "  ✓ $($file.Path)" -ForegroundColor Green
+    } else {
+        Write-Host "  ✗ MISSING: $($file.Path) - $($file.Description)" -ForegroundColor Red
+    }
+}
+
+# ========================================
+# Step 5: Summary
+# ========================================
+Write-Host "`n========================================" -ForegroundColor Cyan
+Write-Host "  Migration Complete" -ForegroundColor Cyan
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "`nNext steps:" -ForegroundColor Yellow
+Write-Host "  1. git add . && git commit -m 'Cloud migration' && git push" -ForegroundColor White
+Write-Host "  2. Monitor: https://github.com/{{GITHUB_REPO}}/actions" -ForegroundColor White
+Write-Host "  3. Test: gcloud run services describe $ProjectSlug --region=$Region --format='value(status.url)'" -ForegroundColor White
+```
+
+---
+
+**Template Version**: 3.6  
 **Last Updated**: December 2024  
 **Methodology**: [coreyprator/project-methodology](https://github.com/coreyprator/project-methodology)

@@ -76,7 +76,7 @@ This project follows [coreyprator/project-methodology](https://github.com/coreyp
 
 ## Version
 
-Current: **v3.5** (December 2024)
+Current: **v3.6** (December 2024)
 
 See `CHANGELOG.md` for version history.
 
