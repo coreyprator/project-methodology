@@ -22,6 +22,35 @@
 
 **SQL Execution Note**: If scripts contain GO statements, use SSMS or sqlcmd, NOT Cloud SQL Studio.
 
+### Database Backup & Disaster Recovery
+- [ ] Automated backups enabled on Cloud SQL instance
+- [ ] Point-in-time recovery (PITR) enabled
+- [ ] Backup retention period set (minimum 7 days, recommend 30)
+- [ ] Backup window configured (off-peak hours)
+- [ ] First backup completed successfully
+
+```powershell
+# Verify backup configuration
+gcloud sql instances describe [INSTANCE_NAME] --format="yaml(settings.backupConfiguration)"
+
+# Expected output should show:
+#   enabled: true
+#   pointInTimeRecoveryEnabled: true
+#   backupRetentionSettings:
+#     retainedBackups: 7 (or more)
+
+# List recent backups
+gcloud sql backups list --instance=[INSTANCE_NAME] --limit=5
+
+# If backups not enabled, enable them:
+gcloud sql instances patch [INSTANCE_NAME] \
+    --backup-start-time=03:00 \
+    --enable-point-in-time-recovery \
+    --retained-backups-count=7
+```
+
+> ⚠️ **CRITICAL**: No database should go to production without verified backups. This is non-negotiable.
+
 ### Secret Manager
 - [ ] Database connection string stored as secret
 - [ ] API keys stored as secrets (if applicable)
@@ -126,11 +155,68 @@ These documents are created by Claude during Sprint 1:
 
 ---
 
+## Phase 6: Smoke Testing (Required Before User Testing)
+
+> ⚠️ **No user testing until ALL smoke tests pass.**
+> 
+> "Deployed" ≠ "Working". This phase verifies the app actually works.
+
+### Layer 1: App Running
+- [ ] Health endpoint returns 200: `curl $URL/health`
+- [ ] Homepage loads without 500 error
+- [ ] API docs accessible: `curl $URL/docs`
+
+### Layer 2: Database Connected
+- [ ] Data endpoints return data (not empty arrays)
+- [ ] Seeded/test data is present and retrievable
+
+### Layer 3: Auth Configured (if applicable)
+- [ ] Auth endpoints respond (200 or 401, not 500)
+- [ ] OAuth redirect works (doesn't 500)
+
+### Layer 4: Protected Endpoints (if applicable)
+- [ ] Return 401 without auth token (not 500)
+- [ ] Return expected data with valid auth
+
+### Layer 5: Error Handling
+- [ ] Invalid resource IDs return 404 (not 500)
+- [ ] Malformed requests return 400/422 (not 500)
+
+### Smoke Test Execution
+
+```bash
+# Run smoke tests against deployed URL
+export BASE_URL=$(gcloud run services describe [SERVICE_NAME] --region=us-central1 --format="value(status.url)")
+
+# Option 1: Automated smoke test suite
+pytest tests/test_smoke.py -v
+
+# Option 2: Quick manual verification
+curl $BASE_URL/health
+curl $BASE_URL/docs
+curl $BASE_URL/api/v1/[your-endpoint]
+```
+
+### Smoke Test Results
+
+| Layer | Status | Notes |
+|-------|--------|-------|
+| App Running | ☐ Pass / ☐ Fail | |
+| Database Connected | ☐ Pass / ☐ Fail | |
+| Auth Configured | ☐ Pass / ☐ Fail / ☐ N/A | |
+| Protected Endpoints | ☐ Pass / ☐ Fail / ☐ N/A | |
+| Error Handling | ☐ Pass / ☐ Fail | |
+
+**All layers must pass before proceeding to user testing.**
+
+---
+
 ## Sprint 1 Definition of Done
 
 All items must be checked for Sprint 1 to be complete:
 
 - [ ] Database created with tables and user
+- [ ] **Database backups enabled and verified**
 - [ ] All secrets stored in Secret Manager with proper IAM
 - [ ] API endpoints accessible on Cloud Run URL
 - [ ] Authentication working (if applicable)
@@ -139,6 +225,9 @@ All items must be checked for Sprint 1 to be complete:
 - [ ] TEST_PLAN.md created and reviewed
 - [ ] UI_DESIGN.md created and reviewed
 - [ ] USER_GUIDE.md created and reviewed
+- [ ] **Smoke tests pass against deployed URL**
+- [ ] **No 500 errors on any endpoint**
+- [ ] **User can load app without error**
 
 ---
 
@@ -158,10 +247,11 @@ All items must be checked for Sprint 1 to be complete:
 
 Sprint 1 is complete when:
 1. All checklist items above are verified
-2. Project Lead has tested core API functionality
-3. TEST_PLAN.md, UI_DESIGN.md, USER_GUIDE.md are approved
+2. **All smoke tests pass** (no 500 errors)
+3. Project Lead has tested core API functionality
+4. TEST_PLAN.md, UI_DESIGN.md, USER_GUIDE.md are approved
 
 Sprint 2 begins with:
-- Implementing tests per TEST_PLAN.md
+- Implementing unit tests per TEST_PLAN.md (now based on verified behavior)
 - Building frontend per UI_DESIGN.md
 - Finalizing documentation per USER_GUIDE.md

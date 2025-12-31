@@ -58,6 +58,23 @@ SELECT name FROM sys.server_principals WHERE name = '[USER_NAME]';
 - [ ] Database user exists
 - [ ] User has correct permissions (db_datareader, db_datawriter)
 
+### Backup Configuration
+```powershell
+# Verify backup settings
+gcloud sql instances describe [INSTANCE_NAME] --format="yaml(settings.backupConfiguration)"
+
+# List recent backups
+gcloud sql backups list --instance=[INSTANCE_NAME] --limit=5
+```
+
+- [ ] Automated backups enabled (`enabled: true`)
+- [ ] Point-in-time recovery enabled (`pointInTimeRecoveryEnabled: true`)
+- [ ] Retention period set (minimum 7 days)
+- [ ] At least one successful backup exists
+- [ ] Most recent backup completed within last 24 hours
+
+> ⚠️ **CRITICAL**: Do not proceed to production without verified backups.
+
 ---
 
 ## Secret Manager Verification

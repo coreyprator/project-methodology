@@ -31,27 +31,28 @@ This methodology captures lessons learned and provides a repeatable framework fo
 | **Secrets in Secret Manager** | Never .env files. All secrets in Google Secret Manager |
 | **Clear Responsibilities** | Explicit matrix of who does what (Human / Claude / VS Code AI) |
 | **Two-Sprint Model** | Sprint 1 = Working backend. Sprint 2 = Tested, polished, documented |
+| **Smoke Tests Before Users** | "Deployed" ≠ "Working". Verify app works before user testing |
+| **Backups Verified** | Every database has automated backups enabled and verified |
 | **Definition of Done** | Not done until deployed, tested, documented, and usable |
 
 ## Repository Structure
 
 ```
 project-methodology/
-├── README.md                         # This file
-├── PROJECT_KICKOFF_TEMPLATE.md       # Master template for new projects
-├── LESSONS_LEARNED.md                # Detailed log of issues and fixes
-├── CHANGELOG.md                      # Version history
-├── checklists/
-│   ├── PRE_KICKOFF_CHECKLIST.md      # Questions before starting
-│   ├── SPRINT_1_CHECKLIST.md         # Infrastructure & API tasks
-│   ├── SPRINT_2_CHECKLIST.md         # Testing & UI tasks
-│   └── DEPLOYMENT_CHECKLIST.md       # GCP setup verification
-├── templates/
-│   ├── TEST_PLAN_TEMPLATE.md         # Testing documentation template
-│   ├── UI_DESIGN_TEMPLATE.md         # UI/UX design template
-│   └── USER_GUIDE_TEMPLATE.md        # End-user documentation template
-└── examples/
-    └── ARTFORGE_KICKOFF.md           # Real example for reference
+├── README.md                     # This file
+├── PROJECT_KICKOFF_TEMPLATE.md   # Master template for new projects
+├── LESSONS_LEARNED.md            # Detailed log of issues and fixes
+├── CHANGELOG.md                  # Version history
+├── PRE_KICKOFF_CHECKLIST.md      # Questions before starting
+├── SPRINT_1_CHECKLIST.md         # Infrastructure, API & Smoke tests
+├── SPRINT_2_CHECKLIST.md         # Testing & UI tasks
+├── DEPLOYMENT_CHECKLIST.md       # GCP setup verification
+├── TEST_PLAN_TEMPLATE.md         # Testing documentation template
+├── UI_DESIGN_TEMPLATE.md         # UI/UX design template
+├── USER_GUIDE_TEMPLATE.md        # End-user documentation template
+├── SMOKE_TEST_TEMPLATE.md        # Deployment verification tests
+├── BACKUP_VERIFICATION.md        # Database backup verification
+└── ARTFORGE_KICKOFF.md           # Real example for reference
 ```
 
 ## Technology Stack
@@ -71,12 +72,12 @@ In each project's README, add:
 
 ```markdown
 ## Development Methodology
-This project follows [coreyprator/project-methodology](https://github.com/coreyprator/project-methodology) v3.5
+This project follows [coreyprator/project-methodology](https://github.com/coreyprator/project-methodology) v3.8
 ```
 
 ## Version
 
-Current: **v3.6** (December 2024)
+Current: **v3.8** (December 2025)
 
 See `CHANGELOG.md` for version history.
 
