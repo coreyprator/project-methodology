@@ -236,14 +236,267 @@ Each entry includes:
 
 ---
 
+## 2025-12 Lessons (v3.7)
+
+### LL-014: Smoke Tests Before User Testing
+
+| Field | Value |
+|-------|-------|
+| Date | 2025-12-30 |
+| Project | ArtForge |
+| Issue | User attempted to test ArtForge UI but received "Internal Server Error: Unexpected token 'I'" - could not test any functionality |
+| Root Cause | Sprint 1 Definition of Done only checked "code deployed" - no verification that the deployed app actually works |
+| Fix Applied | Added "Deployment Verification" phase with layered smoke tests between deployment and user testing |
+| Template Section | SPRINT_1_CHECKLIST.md Phase 5, SMOKE_TEST_TEMPLATE.md |
+
+**Impact**: 
+- User testing completely blocked
+- Debug cycle added: diagnose → fix → redeploy → test
+- Confusion about whether unit tests or deployment was the problem
+
+**Key Learning**: "Deployed" ≠ "Working". Smoke tests verify the deployed app works before users touch it.
+
+---
+
+### LL-015: Smoke Tests vs Unit Tests - Different Purposes
+
+| Field | Value |
+|-------|-------|
+| Date | 2025-12-30 |
+| Project | ArtForge |
+| Issue | Team was stuck deciding between "fix 21 failing unit tests" vs "deploy anyway" - neither option addressed the real problem |
+| Root Cause | Confusion about test types: unit tests verify code logic with mocks, smoke tests verify deployed app works |
+| Fix Applied | Added "Test Types and Purposes" section clarifying when each test type is required |
+| Template Section | PROJECT_KICKOFF_TEMPLATE.md Phase 4.1 Testing Philosophy |
+
+**Impact**:
+- Hours spent on wrong priority
+- Unit tests written for unverified behavior
+- No tests for actual deployment health
+
+**Key Learning**: 
+- Smoke tests: Run against deployed URL, verify app works
+- Unit tests: Run against mocks, verify code logic
+- The 21 failing unit tests were testing *assumed* behavior - the app had never been verified to work
+
+---
+
+### LL-016: Testing Phase Sequence
+
+| Field | Value |
+|-------|-------|
+| Date | 2025-12-30 |
+| Project | ArtForge |
+| Issue | Tests were written before confirming the feature worked, then blocked deployment when they failed |
+| Root Cause | Assumed sequence was: Write code → Write tests → Deploy → User test |
+| Fix Applied | Documented correct sequence for new features vs existing features |
+| Template Section | PROJECT_KICKOFF_TEMPLATE.md Phase 4.1 Testing Philosophy |
+
+**Impact**: 
+- Circular dependency: Can't deploy because tests fail, can't verify behavior because not deployed
+- Tests based on assumptions, not reality
+
+**Key Learning**: For NEW features:
+```
+Write code → Deploy → Smoke test → User test → Write unit tests based on verified behavior
+```
+For EXISTING features: Unit tests are blocking (prevent regression).
+
+---
+
+### LL-017: Database Backups Not Verified
+
+| Field | Value |
+|-------|-------|
+| Date | 2025-12-31 |
+| Project | All Projects |
+| Issue | Databases deployed to production without verified backup and disaster recovery configuration |
+| Root Cause | No backup verification step in Sprint 1 checklist or deployment verification |
+| Fix Applied | Added backup configuration to Sprint 1 checklist, DEPLOYMENT_CHECKLIST, PRE_KICKOFF_CHECKLIST; created BACKUP_VERIFICATION.md with automated verification script |
+| Template Section | SPRINT_1_CHECKLIST.md, DEPLOYMENT_CHECKLIST.md, PRE_KICKOFF_CHECKLIST.md, BACKUP_VERIFICATION.md |
+
+**Impact**: 
+- Risk of data loss without recovery option
+- No disaster recovery capability for production databases
+- Potential compliance/audit issues
+
+**Key Learning**: 
+- Backups must be verified, not assumed
+- Every database needs: automated backups enabled, PITR for production, verified retention period
+- Automated verification script catches gaps across all instances
+
+---
+
+## 2026-01 Lessons (v3.9)
+
+### LL-018: RTFM - AI Agents Don't Read Project Documentation
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-01-01 |
+| Project | Etymython |
+| Issue | VS Code built Sprint 4 content generation without consulting the database schema. Result: queries that don't match actual table structures, JOINs that fail, misunderstanding of data relationships |
+| Root Cause | AI agents start coding immediately without reviewing existing documentation, schemas, or prior work |
+| Fix Applied | Added Pre-Work Checklist (mandatory before writing code) and Violation Response Protocol |
+| Template Section | PROJECT_KICKOFF_TEMPLATE.md Phase 3, VIOLATION_RESPONSE.md |
+
+**Impact**: 
+- Queries joining tables incorrectly
+- Scripts assuming wrong column names
+- Hours of debugging preventable issues
+
+**Key Learning**: AI agents must be explicitly required to read documentation before coding. Add "Confirm understanding with Project Lead before proceeding" as a gate.
+
+---
+
+### LL-019: Automation First - State What TO DO, Not What NOT To Do
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-01-01 |
+| Project | Etymython |
+| Issue | AI agents repeatedly perform manual operations (password prompts, manual data entry, interactive confirmations) despite methodology prohibiting them |
+| Root Cause | Methodology stated what NOT to do ("don't use getpass") leaving infinite wrong choices. Should state exactly what TO DO (one correct choice) |
+| Fix Applied | Rewrote automation requirements as positive instructions with specific code examples |
+| Template Section | PROJECT_KICKOFF_TEMPLATE.md Phase 1 Responsibility Matrix Clarification |
+
+**Impact**: 
+- Scripts hanging waiting for password input
+- Manual API key entry requests blocking automation
+- Interactive confirmations breaking CI/CD
+
+**Key Learning**: 
+- **Parent Principle**: Anything that CAN be automated SHOULD be automated
+- Give one correct way, not infinite wrong ways to avoid
+
+---
+
+### LL-020: AI Lacks Metacognition - External Verification Required
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-01-01 |
+| Project | Etymython |
+| Issue | AI agent reported "ROUNDTRIP SUCCESS" when the test was actually failing. The test compared corrupted-input to corrupted-output, both having the same bug, so they matched |
+| Root Cause | AI cannot evaluate its own output quality. It trusts its own tests, which may have the same blind spots as its code |
+| Fix Applied | Established Golden Audit governance model - truth sources owned by Architect, read-only for VS Code |
+| Template Section | VERIFICATION_GOVERNANCE.md |
+
+**Impact**: 
+- False success reports masking real failures
+- Corrupted data (Unicode 206 mojibake) passing "tests"
+- Project Lead time wasted investigating "passing" tests
+
+**Key Learning**: 
+- **The programmer cannot grade their own test**
+- VS Code's tests = CLAIMS (not proof)
+- Golden Audit = SINGLE SOURCE OF TRUTH (read-only for VS Code)
+
+---
+
+### LL-021: AI Memory Loss - Context Doesn't Persist
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-01-01 |
+| Project | Etymython |
+| Issue | VS Code repeatedly forgets established patterns, configurations, and decisions from earlier in the same project or conversation |
+| Root Cause | AI context windows are limited. Long conversations lose early context. Separate chat sessions have no shared memory |
+| Fix Applied | Added context reinforcement strategies: explicit citations, instruction templates, periodic reminders |
+| Template Section | PROJECT_KICKOFF_TEMPLATE.md, VIOLATION_RESPONSE.md |
+
+**Impact**: 
+- Forgetting passkey authentication after being told multiple times
+- Reverting to default patterns instead of project-specific ones
+- Disproven theories persisting across sessions
+
+**Key Learning**: 
+- Use explicit citations: "Per PROJECT_METHODOLOGY.md section 4.2..."
+- Every ~10 exchanges, restate critical constraints
+- When violated, require lookup and confirmation before proceeding
+
+---
+
+### LL-022: Unit Before Bulk - Testing Sequence
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-01-01 |
+| Project | Etymython |
+| Issue | VS Code jumped from "code written" directly to "bulk execution" of 56 records, causing widespread data corruption |
+| Root Cause | No enforced testing sequence requiring single-record verification before batch operations |
+| Fix Applied | Mandatory testing sequence: Smoke → Unit (1 record) → Small Batch (3-5) → Bulk. Added bulk operation checklist |
+| Template Section | SPRINT_1_CHECKLIST.md, TEST_PLAN_TEMPLATE.md |
+
+**Impact**: 
+- Bulk operations applying bugs to all records simultaneously
+- No rollback possible when entire dataset corrupted
+- Multiple recovery attempts needed
+
+**Key Learning**: 
+```
+NEVER skip from "code written" to "bulk execution"
+Sequence: Smoke test → Unit test (1 record) → Small batch (3-5) → Bulk
+```
+
+---
+
+### LL-023: Unicode/Encoding Requires Special Attention
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-01-01 |
+| Project | Etymython |
+| Issue | Greek Unicode text corrupted multiple times due to encoding mismatches between Python, pyodbc, and SQL Server |
+| Root Cause | String comparison doesn't catch encoding bugs. SQL Server NVARCHAR uses UTF-16, Python uses UTF-8, pyodbc configuration is non-obvious |
+| Fix Applied | Added Unicode handling requirements: verify with UNICODE() not string comparison, UTF-16LE encoding for pyodbc |
+| Template Section | UNICODE_HANDLING.md |
+
+**Impact**: 
+- Original `Ζεύς` (Unicode 918) became `????` then `Î–ÎµÏÏ‚` (mojibake)
+- Each "fix" made data worse
+- 56 records corrupted before root cause found
+
+**Key Learning**: 
+- Test with UNICODE values: `SELECT UNICODE(LEFT(column, 1))` 
+- Greek should be 913-1023 (basic) or 7936-8191 (extended)
+- If you see 63, 206, 195, 225 = encoding bug
+- pyodbc setup: `conn.setencoding(encoding='utf-16-le')`
+
+---
+
+### LL-024: Error Recovery - Don't Make It Worse
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-01-01 |
+| Project | Etymython |
+| Issue | Each "fix" attempt made the data worse, not better. Pressure to show progress led to untested fixes that compounded problems |
+| Root Cause | No error recovery protocol. Fixes applied to all affected records without isolated testing |
+| Fix Applied | Error Recovery Protocol: STOP → PRESERVE → ISOLATE → VERIFY → ROLLBACK PLAN |
+| Template Section | PROJECT_KICKOFF_TEMPLATE.md Appendix D |
+
+**Impact**: 
+- Original: Some records had `????` (data lost but recoverable)
+- After fix attempt: All 56 records had mojibake (worse than before)
+- Multiple attempts before finally working
+
+**Key Learning**: 
+```
+BACKUP BEFORE FIX: SELECT * INTO table_backup_YYYYMMDD FROM table;
+NEVER apply untested fixes to all affected records simultaneously.
+```
+
+---
+
 ## Summary Statistics
 
 | Metric | Value |
 |--------|-------|
-| Total Lessons | 13 |
-| Template Sections Updated | 9 |
-| New Sections Added | 5 |
-| Projects Contributing | ArtForge (primary), HarmonyLab (migration) |
+| Total Lessons | 24 |
+| Template Sections Updated | 15 |
+| New Sections Added | 12 |
+| Projects Contributing | ArtForge, HarmonyLab, Etymython |
 
 ## How to Add New Lessons
 

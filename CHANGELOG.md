@@ -6,6 +6,45 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [3.9.0] - 2026-01-01
+
+### Added
+- **VIOLATION_RESPONSE.md**: New template for handling methodology violations with standard response protocol
+- **VERIFICATION_GOVERNANCE.md**: Golden Audit governance model - truth sources owned by Architect, read-only for VS Code
+- **UNICODE_HANDLING.md**: Encoding requirements for non-ASCII data (Python + SQL Server)
+- **Pre-Work Checklist** (PROJECT_KICKOFF_TEMPLATE.md): Mandatory documentation review before coding
+- **Automation Requirements** (PROJECT_KICKOFF_TEMPLATE.md): Positive instructions (what TO DO) instead of just prohibitions
+- **Appendix D: Error Recovery Protocol** (PROJECT_KICKOFF_TEMPLATE.md): STOP → PRESERVE → ISOLATE → VERIFY → APPLY
+- **Phase 5.5: Mandatory Testing Sequence** (SPRINT_1_CHECKLIST.md): Smoke → Unit → Small Batch → Bulk
+- **Bulk Operation Checklist** (SPRINT_1_CHECKLIST.md): Required verification before bulk operations
+- **LL-018 through LL-024**: Seven lessons from Etymython Sprint 3-4
+
+### Changed
+- **Responsibility Matrix Clarification**: Now includes pre-work checklist and positive automation instructions
+- **Sprint 1 Checklist**: Added testing sequence and bulk operation requirements
+
+### Key Insights
+
+**LL-018: RTFM**
+> AI agents must be explicitly required to read documentation before coding.
+
+**LL-019: Automation First**
+> State what TO DO (one correct choice), not what NOT to do (infinite wrong choices).
+
+**LL-020: External Verification**
+> The programmer cannot grade their own test. Golden Audit = single source of truth.
+
+**LL-022: Unit Before Bulk**
+> NEVER skip from "code written" to "bulk execution".
+
+**LL-023: Unicode Handling**
+> String comparison doesn't catch encoding bugs. Always verify with UNICODE() values.
+
+**LL-024: Error Recovery**
+> Each "fix" attempt can make data worse. Stop and plan before acting.
+
+---
+
 ## [3.8.0] - 2025-12-31
 
 ### Added

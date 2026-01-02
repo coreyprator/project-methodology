@@ -33,6 +33,10 @@ This methodology captures lessons learned and provides a repeatable framework fo
 | **Two-Sprint Model** | Sprint 1 = Working backend. Sprint 2 = Tested, polished, documented |
 | **Smoke Tests Before Users** | "Deployed" ≠ "Working". Verify app works before user testing |
 | **Backups Verified** | Every database has automated backups enabled and verified |
+| **RTFM First** | AI must read documentation before writing code |
+| **Positive Instructions** | State what TO DO, not just what NOT to do |
+| **External Verification** | The programmer cannot grade their own test |
+| **Unit Before Bulk** | Never skip from "code written" to "bulk execution" |
 | **Definition of Done** | Not done until deployed, tested, documented, and usable |
 
 ## Repository Structure
@@ -52,6 +56,9 @@ project-methodology/
 ├── USER_GUIDE_TEMPLATE.md        # End-user documentation template
 ├── SMOKE_TEST_TEMPLATE.md        # Deployment verification tests
 ├── BACKUP_VERIFICATION.md        # Database backup verification
+├── VIOLATION_RESPONSE.md         # Handling methodology violations
+├── VERIFICATION_GOVERNANCE.md    # Golden Audit governance model
+├── UNICODE_HANDLING.md           # Non-ASCII encoding requirements
 └── ARTFORGE_KICKOFF.md           # Real example for reference
 ```
 
@@ -72,12 +79,12 @@ In each project's README, add:
 
 ```markdown
 ## Development Methodology
-This project follows [coreyprator/project-methodology](https://github.com/coreyprator/project-methodology) v3.8
+This project follows [coreyprator/project-methodology](https://github.com/coreyprator/project-methodology) v3.9
 ```
 
 ## Version
 
-Current: **v3.8** (December 2025)
+Current: **v3.9** (January 2026)
 
 See `CHANGELOG.md` for version history.
 
