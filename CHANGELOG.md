@@ -6,6 +6,72 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [3.10.2] - 2026-01-03
+
+### Added
+- **LL-030**: Developer Tests Before Handoff - Universal Principle (applies to ALL work, not just Sprint 1)
+- **Developer Tests Before Handoff** (PROJECT_KICKOFF_TEMPLATE.md): Universal section covering frontend, API, database, scripts, bug fixes
+- **Self-Verification Requirements**: Matrix of what to verify for each work type
+- **Handoff Report Template**: Required format when requesting Project Lead review
+
+### Changed
+- Moved handoff testing requirements from Sprint 1 to universal Phase 1 section
+- Updated VIOLATION_RESPONSE.md quick reference with 5 new violation types (LL-025 through LL-030)
+
+### Key Insight
+
+**LL-030: Developer Tests Before Handoff**
+> Do not hand off ANY work for review until you have tested it yourself. This applies to frontend, API, database, scripts, bug fixes—everything. Project Lead's time is for reviewing WORKING code, not debugging errors you should have caught.
+
+---
+
+## [3.10.1] - 2026-01-02
+
+### Added
+- **LL-029**: Session Start Authentication - Human Responsibility
+- **Session Start Script** (PROJECT_KICKOFF_TEMPLATE.md Phase 0.1): Reusable PowerShell script for GCP auth
+- **AI Behavior When Blocked** (PROJECT_KICKOFF_TEMPLATE.md Phase 0.1): Clear protocol for password prompt encounters
+- **Re-Authentication Triggers**: Documented when tokens expire and re-auth is needed
+
+### Key Insight
+
+**LL-029: Session Start Authentication**
+> GCP auth is human-only. Browser/Passkey authentication cannot be done by AI. If AI encounters password prompt: STOP, request re-auth, wait for confirmation.
+
+---
+
+## [3.10.0] - 2026-01-02
+
+### Added
+- **EXTERNAL_API_HANDLING.md**: New guide for persisting temporary API resources immediately
+- **Code Delivery Standards** (PROJECT_KICKOFF_TEMPLATE.md): Always provide complete files, never diffs
+- **Version Control Best Practices** (PROJECT_KICKOFF_TEMPLATE.md): Push at logical checkpoints
+- **Bug Fix Verification: Test the Code Path** (PROJECT_KICKOFF_TEMPLATE.md Appendix D): Must test the broken code, not just fix data
+- **LL-025**: External API temporary resources must be persisted immediately (DALL-E URLs expire in 2hrs)
+- **LL-026**: Always provide complete files, never diffs or snippets
+- **LL-027**: Test the code path that caused a bug before fixing the data it created
+- **LL-028**: Git push at logical checkpoints, not only when asked
+
+### Changed
+- **Appendix D Error Recovery**: Expanded with "Test the Code Path" section
+- **Appendix E**: Added EXTERNAL_API_HANDLING.md reference
+
+### Key Insights
+
+**LL-025: Persist Immediately**
+> NEVER store temporary URLs in persistent database fields. Download and persist to YOUR storage immediately.
+
+**LL-026: No Diffs**
+> Extra seconds to generate complete file saves significant debugging time. AI token costs are trivial compared to human merge-error debugging.
+
+**LL-027: Test the Code Path**
+> If you don't exercise the exact code path that was broken, you don't actually know if your fix works.
+
+**LL-028: Push at Checkpoints**
+> Unpushed code is unprotected code. Push after fixes, features, sessions—minimum daily.
+
+---
+
 ## [3.9.0] - 2026-01-01
 
 ### Added

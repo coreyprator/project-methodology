@@ -1,4 +1,4 @@
-# Project Kickoff Template v3.6
+# Project Kickoff Template v3.10.2
 
 ## Document Variables
 
@@ -60,6 +60,45 @@ gcloud auth list
 ```
 
 > ⚠️ **CRITICAL**: If you see a password prompt at Step 3, STOP. Run `gcloud auth login` again. The Passkey flow should complete in browser without password entry.
+
+### Session Start Script (Recommended)
+
+GCloud tokens expire after ~1 hour of inactivity. Create a reusable script:
+
+```powershell
+# start-gcp-session.ps1 - Run at start of each work session
+Write-Host "=== GCP SESSION START ===" -ForegroundColor Cyan
+gcloud auth login
+gcloud auth application-default login  
+gcloud config set project {{GCP_PROJECT_ID}}
+gcloud auth application-default set-quota-project {{GCP_PROJECT_ID}}
+Write-Host "=== READY ===" -ForegroundColor Green
+gcloud config get-value project
+```
+
+**Recommendation**: Save as TextExpander snippet or shell alias for quick access.
+
+### When Re-Authentication is Needed
+
+- Any gcloud command prompts for password
+- Error: "Your credentials are invalid" or "Token has been expired or revoked"
+- First command after ~1 hour idle
+- After system restart
+
+### AI Behavior When Blocked
+
+If VS Code AI encounters a password prompt:
+1. **STOP** immediately - do not attempt to enter credentials
+2. **Tell Project Lead**: "GCP auth has expired. Please run session start script."
+3. **Wait** for confirmation before proceeding
+4. **Do NOT** work around it or attempt alternative authentication
+
+| Task | Owner | AI Can Do? |
+|------|-------|------------|
+| Browser/Passkey auth | Human | ❌ NO |
+| Run auth script | Human | ❌ NO |
+| Detect auth needed | AI | ✅ YES (see password prompt) |
+| Request re-auth | AI | ✅ YES (ask human) |
 
 ### 0.2 Verify Project Configuration
 
@@ -147,6 +186,198 @@ gcloud run services describe {{PROJECT_SLUG}} --region=us-central1 --format="val
 | "Help debug deployment errors" | Own debugging: check logs, fix issues, retry |
 | "You need to set up WIF" | Run WIF setup commands, report completion |
 
+### Pre-Work Checklist (Mandatory)
+
+> **VS Code AI must complete this BEFORE writing any code.**
+
+```
+BEFORE WRITING ANY CODE:
+
+[ ] Read relevant SKILL.md files (if applicable)
+[ ] Review database schema/data model documentation
+[ ] Review API documentation if applicable
+[ ] Review project-specific methodology constraints
+
+VS Code must state:
+"I have reviewed [specific documents] and understand that [key constraints].
+My approach will be [description] which complies with [methodology sections]."
+
+Project Lead confirms understanding before VS Code proceeds.
+```
+
+### Automation Requirements (Positive Instructions)
+
+**Parent Principle**: Anything that CAN be automated SHOULD be automated.
+
+```
+1. AUTHENTICATION:
+   ✅ DO: Retrieve all credentials from Google Secret Manager
+   ✅ DO: Use service accounts for GCP operations
+   ✅ DO: Use connection strings with embedded credentials from secrets
+   
+   Example (correct):
+   ```python
+   from google.cloud import secretmanager
+   
+   def get_secret(secret_id):
+       client = secretmanager.SecretManagerServiceClient()
+       name = f"projects/{PROJECT_ID}/secrets/{secret_id}/versions/latest"
+       response = client.access_secret_version(request={"name": name})
+       return response.payload.data.decode("UTF-8")
+   
+   db_password = get_secret("{{PROJECT_SLUG}}-db-password")
+   ```
+
+2. DATABASE CONNECTIONS:
+   ✅ DO: Build connection strings programmatically from secrets
+   ✅ DO: Use parameterized queries
+   
+3. API KEYS:
+   ✅ DO: Retrieve from Secret Manager or environment variables
+   ✅ DO: Never hardcode, never prompt
+   
+4. SCRIPTS:
+   ✅ DO: Run completely non-interactively
+   ✅ DO: Accept all inputs via arguments, env vars, or config files
+```
+
+### Automation Violations Quick Reference
+
+| Violation | Correct Approach |
+|-----------|------------------|
+| `getpass("Enter password:")` | `get_secret("db-password")` |
+| `input("Enter API key:")` | `os.getenv("OPENAI_API_KEY")` or Secret Manager |
+| `input("Continue? y/n")` | `--force` flag or `--dry-run` default |
+| Manual SQL execution in SSMS | Scripted migration with verification |
+
+### Code Delivery Standards
+
+> **Always provide COMPLETE files. Never diffs or snippets.**
+
+When providing code, scripts, stored procedures, or configuration files:
+
+| ✅ ALWAYS DO | ❌ NEVER DO |
+|--------------|-------------|
+| Provide complete file contents | "Replace this section with..." |
+| Ready to copy/paste or save | "Find line X and change to..." |
+| Include file header with version | Unified diff format (+/- lines) |
+| Immediately usable | "Add this after line 47..." |
+
+**Exception**: If file is >500 lines AND only small section changes, ASK Project Lead preference first.
+
+**Rationale**: Extra seconds to generate complete file saves significant debugging time. AI token costs are trivial compared to human merge-error debugging.
+
+### Version Control Best Practices
+
+> **Push at logical checkpoints, not only when asked.**
+
+| When to Push | Examples |
+|--------------|----------|
+| After each significant fix | Bug fix, security fix, data integrity fix |
+| After each feature completion | User story complete, feature ready for testing |
+| End of each working session | Before ending conversation, switching projects |
+| Before handoffs | Before deployment, review meetings, another dev needs code |
+| **MINIMUM** | At least once per day |
+
+**AI Agent Responsibility**:
+- Proactively suggest "Ready to push?" after completing significant work
+- Include push status in task completion reports
+- Warn if unpushed changes accumulating
+- Never let >1 day pass without pushing completed work
+
+**Commit Message Format**:
+```
+✅ Good: "Fix UTF-16LE encoding for Greek text in SQL Server"
+✅ Good: "Store DALL-E images to GCS instead of temp URLs"
+❌ Bad: "Fixed stuff"
+❌ Bad: "WIP"
+```
+
+### Developer Tests Before Handoff
+
+> ⚠️ **Universal Principle**: Do not hand off ANY work for review until you have tested it yourself.
+> 
+> Project Lead's time is for reviewing WORKING features, not debugging errors you should have caught.
+
+This applies to ALL handoffs throughout the project—Sprint 1, Sprint 2, bug fixes, features, everything.
+
+#### Self-Verification Requirements
+
+**Before requesting Project Lead review, VS Code AI must verify**:
+
+| Work Type | Self-Verification Required |
+|-----------|---------------------------|
+| **Frontend/UI** | Browser DevTools: Console (zero errors), Network (no failed requests), feature renders |
+| **API endpoints** | Curl/Postman: endpoints respond correctly, no 500 errors |
+| **Database changes** | Query returns expected results, no constraint violations |
+| **Scripts/automation** | Script runs without errors, produces expected output |
+| **Bug fixes** | Original bug no longer reproduces, no new errors introduced |
+
+#### Browser DevTools Checklist (Frontend Work)
+
+```
+Before handing off ANY frontend work:
+
+1. [ ] Open browser DevTools (F12)
+2. [ ] Console tab: ZERO red errors
+3. [ ] Network tab: No failed requests (red entries)
+4. [ ] Feature actually renders on screen
+5. [ ] Basic interactions work (click, submit, navigate)
+```
+
+#### Common Issues to Catch Yourself
+
+| Location | What to Check | You Should Fix |
+|----------|---------------|----------------|
+| Console | `TypeError`, `ReferenceError` | JS bugs |
+| Console | `Failed to fetch` | API endpoint URLs |
+| Console | Service worker errors | Cache file paths |
+| Network (red) | 404 errors | File paths, routing |
+| Network (red) | CORS errors | API headers |
+| API response | 500 errors | Backend bugs |
+| Database | Constraint violations | Data integrity |
+
+#### Handoff Report Template
+
+When requesting Project Lead review, include:
+
+```
+## Handoff: [Feature/Fix Name]
+
+**What was implemented**: [description]
+
+**Self-verification completed**:
+- [ ] Tested [browser/API/script/database] myself
+- [ ] Zero errors in [Console/logs/output]
+- [ ] Feature works as expected
+- [ ] [For fixes] Original issue no longer reproduces
+
+**Known limitations**: [any caveats]
+
+**Ready for review**: Yes
+```
+
+#### Violation Response
+
+If VS Code hands off broken/untested code:
+
+```
+METHODOLOGY VIOLATION: You handed off untested code.
+
+Before asking me to test or review:
+1. YOU test it yourself first
+2. YOU verify zero errors (console, logs, output)
+3. YOU confirm it actually works
+4. ONLY THEN ask me to review
+
+Fix the errors, verify yourself, then report back with:
+- What the bug was
+- How you fixed it  
+- Confirmation you tested it yourself
+
+My time is for reviewing WORKING code, not finding bugs you should have caught.
+```
+
 ---
 
 ## Phase 2: Architecture Design
@@ -225,6 +456,23 @@ ALTER ROLE db_datawriter ADD MEMBER {{PROJECT_SLUG}}_user;
 GO
 ```
 
+#### Backup Configuration
+```powershell
+# Verify backup configuration on instance
+gcloud sql instances describe {{SQL_INSTANCE}} --format="yaml(settings.backupConfiguration)"
+
+# If backups not enabled, enable them:
+gcloud sql instances patch {{SQL_INSTANCE}} \
+    --backup-start-time=03:00 \
+    --enable-point-in-time-recovery \
+    --retained-backups-count=7
+
+# Verify first backup completed
+gcloud sql backups list --instance={{SQL_INSTANCE}} --limit=1
+```
+
+> ⚠️ **CRITICAL**: Do not proceed to user testing without verified backups.
+
 #### Secret Manager Setup
 ```powershell
 # Database connection string
@@ -301,6 +549,7 @@ jobs:
 ### 3.2 Sprint 1 Definition of Done
 
 - [ ] Database created with tables and user
+- [ ] **Database backups enabled and verified**
 - [ ] All secrets stored in Secret Manager
 - [ ] API endpoints accessible on Cloud Run URL
 - [ ] Authentication working (if applicable)
@@ -309,6 +558,9 @@ jobs:
 - [ ] TEST_PLAN.md created
 - [ ] UI_DESIGN.md created
 - [ ] USER_GUIDE.md created
+- [ ] **Smoke tests pass against deployed URL**
+- [ ] **No 500 errors on any endpoint**
+- [ ] **User can load app without error**
 
 ---
 
@@ -317,6 +569,29 @@ jobs:
 ### 4.1 Testing Philosophy
 
 > **If it's in the requirements or user documentation, it MUST be tested.**
+
+#### Test Types and Purposes
+
+| Test Type | Runs Against | Purpose | When Required |
+|-----------|--------------|---------|---------------|
+| **Smoke Tests** | Deployed URL | Verify deployment works | Before user testing (BLOCKING) |
+| **Unit Tests** | Mocks/Local | Verify code logic | After behavior confirmed |
+| **Integration Tests** | Real services | Verify integrations | Before release |
+
+#### Testing Sequence for New Features
+
+```
+Write code → Deploy → Smoke test → User test → Write unit tests based on verified behavior
+```
+
+1. **Smoke tests**: BLOCKING — must pass before user testing
+2. **Unit tests**: NON-BLOCKING during initial development
+3. After user validation, unit tests become BLOCKING
+
+#### Testing Sequence for Existing Features
+
+- Unit tests: BLOCKING (prevent regression)
+- Smoke tests: BLOCKING (verify deployment)
 
 | Category | What to Test |
 |----------|--------------|
@@ -577,6 +852,151 @@ Write-Host "  3. Test: gcloud run services describe $ProjectSlug --region=$Regio
 
 ---
 
-**Template Version**: 3.6  
-**Last Updated**: December 2024  
+## Appendix D: Error Recovery Protocol
+
+When fixing bugs or data issues, follow this protocol to avoid making things worse.
+
+> **Key Principle**: Each "fix" attempt can make data worse, not better. Stop and plan before acting.
+
+### Error Recovery Steps
+
+```
+1. STOP: Don't attempt fixes until root cause is understood
+   - What exactly is wrong?
+   - Why did it happen?
+   - How many records are affected?
+
+2. PRESERVE: Back up current state before any fix attempt
+   - SQL: SELECT * INTO table_backup_YYYYMMDD FROM table;
+   - Files: Copy to backup folder with date
+   - Document the current state
+
+3. ISOLATE: Test fix on copy/single record, not production data
+   - Create test record or use non-critical record
+   - Apply fix to ONE record only
+   - Verify fix works (via Golden Audit, not self-test)
+
+4. VERIFY: Confirm fix works before applying broadly
+   - Golden Audit passes for test record
+   - Project Lead confirms fix is correct
+   - Small batch (3-5 records) test passes
+
+5. APPLY: Only after steps 1-4 pass
+   - Apply to all affected records
+   - Include progress logging
+   - Verify sample after completion
+
+6. ROLLBACK PLAN: Know how to undo if fix fails
+   - Document rollback steps before starting
+   - Keep backup until fix is verified
+```
+
+### Backup Before Fix Template
+
+```sql
+-- Always create backup before any fix
+SELECT * INTO {{TABLE_NAME}}_backup_YYYYMMDD FROM {{TABLE_NAME}};
+
+-- Verify backup
+SELECT COUNT(*) FROM {{TABLE_NAME}}_backup_YYYYMMDD;
+
+-- After fix is verified, backup can be dropped (optional)
+-- DROP TABLE {{TABLE_NAME}}_backup_YYYYMMDD;
+```
+
+### Fix Testing Sequence
+
+```
+1. UNIT TEST: Fix ONE record
+   - Apply fix to single record
+   - Verify with Golden Audit (not self-test)
+   - Project Lead confirms
+
+2. SMALL BATCH: Fix 3-5 records
+   - Apply fix to small batch
+   - Verify each individually
+   - Check for patterns (all fail same way = systemic bug)
+
+3. BULK FIX: Only after steps 1-2 pass
+   - Include progress logging
+   - Include error handling (stop on first failure)
+   - Verify sample after completion
+```
+
+### Bug Fix Verification: Test the Code Path
+
+> **When fixing a bug that caused bad data, you must test THE CODE THAT WAS BROKEN, not just fix the data.**
+
+```
+1. FIND THE ROOT CAUSE
+   - Locate the code that created the bad data
+   - Understand WHY it produced incorrect results
+   - Document the file, function, and line numbers
+   
+2. FIX THE CODE
+   - Modify the code to produce correct results
+   - Follow "No Diffs" rule - provide complete updated file
+   
+3. TEST THE CODE PATH (Critical!)
+   Before fixing existing data, prove the fix works:
+   - Run the ACTUAL code that was broken
+   - Create NEW test data through that code path
+   - Verify the new data is correct
+   
+   Example: If "add figure" stored temp URLs:
+   - Use "add figure" to create a TEST figure
+   - Check: does the test figure have a permanent URL?
+   - If yes: code is fixed
+   - If no: debug further before proceeding
+   
+4. VERIFY WITH AUDIT
+   - Run Golden Audit
+   - Test data should NOT appear in violations
+   - Original bad data SHOULD still appear (not fixed yet)
+   
+5. FIX EXISTING DATA
+   Only after step 3 passes:
+   - Use the now-verified code to regenerate bad data
+   - Or run a data migration script
+   
+6. FINAL VERIFICATION
+   - Run Golden Audit again
+   - All violations should be resolved
+```
+
+**Anti-Pattern**:
+- Fix data directly without fixing code → Bug will recur
+- Fix code and assume it works without testing → No proof it's fixed
+- Test with different code than what caused the bug → Wrong code tested
+
+### What NOT To Do
+
+| ❌ Wrong | ✅ Correct |
+|----------|-----------|
+| Apply fix to all records immediately | Test on single record first |
+| Skip backup because "it's a simple fix" | Always backup before any change |
+| Trust your own test that fix worked | Verify with Golden Audit |
+| Keep trying different fixes rapidly | Stop, understand root cause, then fix |
+| Delete backup immediately after fix | Keep backup until fix verified in production |
+| Fix data without fixing/testing code | Test the code path that was broken first |
+
+---
+
+## Appendix E: Additional Documentation
+
+For detailed guidance, see these companion documents:
+
+| Document | Purpose |
+|----------|---------|
+| VIOLATION_RESPONSE.md | How to handle methodology violations |
+| VERIFICATION_GOVERNANCE.md | Golden Audit ownership and access control |
+| UNICODE_HANDLING.md | Non-ASCII text encoding requirements |
+| BACKUP_VERIFICATION.md | Database backup verification |
+| SMOKE_TEST_TEMPLATE.md | Deployment verification tests |
+| EXTERNAL_API_HANDLING.md | Temporary resource persistence |
+
+---
+
+**Template Version**: 3.10.2  
+**Last Updated**: January 2026  
 **Methodology**: [coreyprator/project-methodology](https://github.com/coreyprator/project-methodology)

@@ -498,6 +498,202 @@ NEVER apply untested fixes to all affected records simultaneously.
 | New Sections Added | 12 |
 | Projects Contributing | ArtForge, HarmonyLab, Etymython |
 
+---
+
+### LL-025: External API Temporary Resources - Persist Immediately
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-01-02 |
+| Project | Etymython |
+| Issue | 3 figures had broken images discovered days later by users. DALL-E returns Azure Blob URLs that expire in 2 hours, but these were stored directly in database |
+| Root Cause | External API temporary URLs stored as-is instead of downloading and persisting to controlled storage |
+| Fix Applied | Added External API Resource Handling requirements - identify temp resources, persist immediately to GCS, validate in audit |
+| Template Section | PROJECT_KICKOFF_TEMPLATE.md External Integrations, EXTERNAL_API_HANDLING.md |
+
+**Impact**: 
+- Silent failures discovered by end users, not tests
+- 67 figures worked (permanent GCS URLs), 3 failed (temp DALL-E URLs)
+- Expiration was invisible until images broke
+
+**Key Learning**: 
+```
+NEVER store temporary URLs in persistent database fields.
+1. Identify temporary resources (DALL-E 2hr, pre-signed URLs, tokens)
+2. Download/persist immediately to storage you control (GCS)
+3. Store YOUR permanent URL, not the API's temporary URL
+4. Add audit checks for known temp URL patterns
+```
+
+---
+
+### LL-026: No Diffs - Always Provide Complete Files
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-01-02 |
+| Project | Etymython |
+| Issue | AI provided stored procedure update as diff ("Replace the DC-005 section with this..."). Project Lead refused: "I don't do diffs. It breaks code and takes mental cycles to figure out." |
+| Root Cause | AI defaulting to minimal output instead of complete, immediately usable files |
+| Fix Applied | Added File Delivery Standard - always provide complete files, never diffs or snippets |
+| Template Section | PROJECT_KICKOFF_TEMPLATE.md Code Delivery Standards |
+
+**Impact**: 
+- Error-prone manual merging
+- Time-consuming context reconstruction
+- Ambiguous line numbers that shift
+- Missing context makes review difficult
+
+**Key Learning**: 
+```
+✅ ALWAYS: Provide complete file, ready to copy/paste or save
+❌ NEVER: "Replace this section...", "Find line X and change...", unified diff format
+
+EXCEPTION: If file >500 lines AND small change, ASK preference first.
+RATIONALE: Extra seconds to generate complete file saves significant debugging time.
+```
+
+---
+
+### LL-027: Test the Code Path, Not Just the Data
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-01-02 |
+| Project | Etymython |
+| Issue | Fix proposal for 3 broken images didn't address root cause - just regenerate images and update DB. Project Lead: "That particular application will continue to repeat the broken behavior." |
+| Root Cause | Temptation to fix visible symptoms (bad data) without proving the underlying code is fixed |
+| Fix Applied | Added Bug Fix Verification protocol - must test the actual code path before fixing data it created |
+| Template Section | PROJECT_KICKOFF_TEMPLATE.md Appendix D (expanded), BUG_FIX_PROTOCOL.md |
+
+**Impact**: 
+- Bug recurs next time code runs if only data fixed
+- False confidence that problem is solved
+- Wasted effort on repeated fixes
+
+**Key Learning**: 
+```
+When fixing a bug that caused bad data:
+1. FIND the root cause code
+2. FIX the code
+3. TEST by running that exact code path (create NEW test data)
+4. VERIFY test data is correct (via Golden Audit)
+5. ONLY THEN fix existing bad data
+
+ANTI-PATTERN: Fix data directly without fixing/testing code = bug will recur
+```
+
+---
+
+### LL-028: Git Push at Logical Checkpoints, Not On Demand
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-01-02 |
+| Project | Etymython |
+| Issue | After completing Sprint 4, discovered last push was 1 week ago. 8 modified files with critical fixes (UTF-16LE encoding, DALL-E→GCS) sitting unpushed |
+| Root Cause | AI agents don't proactively push; wait until explicitly asked |
+| Fix Applied | Added Git Push Best Practices - push at logical checkpoints, minimum daily, proactively suggest |
+| Template Section | PROJECT_KICKOFF_TEMPLATE.md Version Control |
+
+**Impact**: 
+- Week of work at risk if local environment lost
+- CI/CD pipeline didn't run on critical fixes
+- No backup of production fixes
+- Team couldn't see or build on changes
+
+**Key Learning**: 
+```
+WHEN TO PUSH:
+- After each significant fix
+- After each feature completion
+- At end of each working session
+- Before handoffs
+- MINIMUM: Daily
+
+AI RESPONSIBILITY: Proactively suggest "Ready to push?" after completing work.
+ANTI-PATTERN: Waiting until asked, accumulating week of local-only changes.
+```
+
+---
+
+### LL-029: Session Start Authentication - Human Responsibility
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-01-02 |
+| Project | Etymython |
+| Issue | GCloud commands prompted for password, blocking AI agents. Tokens expire after ~1 hour of inactivity, requiring browser/passkey re-authentication that AI cannot perform |
+| Root Cause | No documented session-start ritual; AI tried to proceed with expired credentials instead of requesting human re-auth |
+| Fix Applied | Added Session Start Authentication Checklist; clarified human-only auth responsibility; AI must stop and request re-auth if blocked |
+| Template Section | PROJECT_KICKOFF_TEMPLATE.md Phase 0.1 (enhanced) |
+
+**Impact**: 
+- Scripts blocked waiting for password input
+- AI couldn't proceed with GCP operations
+- Work stalled until human manually authenticated
+
+**Key Learning**: 
+```
+GCP AUTH IS HUMAN-ONLY:
+- Browser/Passkey authentication cannot be done by AI
+- Create session-start script (TextExpander, shell alias)
+- Run BEFORE any GCP work session
+
+IF AI ENCOUNTERS PASSWORD PROMPT:
+1. STOP immediately
+2. Tell Project Lead: "GCP auth has expired. Please run session start script."
+3. Wait for confirmation before proceeding
+4. Do NOT attempt to enter credentials or work around it
+```
+
+---
+
+### LL-030: Developer Tests Before Handoff - Universal Principle
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-01-03 |
+| Project | Etymython |
+| Issue | VS Code handed off broken code 3 times without testing it. Project Lead found console errors (service worker cache failures) that VS Code should have caught |
+| Root Cause | AI assumed "code compiles" = "code works"; no self-verification before handoff |
+| Fix Applied | Added universal "Developer Tests Before Handoff" section - applies to ALL work (frontend, API, scripts, bug fixes) throughout entire project lifecycle |
+| Template Section | PROJECT_KICKOFF_TEMPLATE.md Phase 1 (universal principles) |
+
+**Impact**: 
+- Project Lead time wasted debugging console errors
+- Multiple round-trips for same feature
+- Broken service worker caching files that don't exist
+
+**Key Learning**: 
+```
+UNIVERSAL PRINCIPLE - APPLIES TO ALL HANDOFFS:
+
+Do not hand off ANY work for review until you have tested it yourself.
+
+| Work Type     | Self-Verification Required                    |
+|---------------|-----------------------------------------------|
+| Frontend/UI   | DevTools Console + Network, feature renders   |
+| API endpoints | Curl/test request, no 500 errors              |
+| Database      | Query works, no constraint violations         |
+| Scripts       | Runs without errors, expected output          |
+| Bug fixes     | Bug no longer reproduces                      |
+
+Project Lead's time is for reviewing WORKING code, not debugging errors 
+you should have caught.
+```
+
+---
+
+## Summary Statistics
+
+| Metric | Value |
+|--------|-------|
+| Total Lessons | 30 |
+| Template Sections Updated | 20 |
+| New Sections Added | 16 |
+| Projects Contributing | ArtForge, HarmonyLab, Etymython |
+
 ## How to Add New Lessons
 
 1. Create entry with the next LL number (e.g., LL-013)
